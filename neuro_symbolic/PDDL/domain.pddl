@@ -1,32 +1,26 @@
 (define (domain blocksworld)
-(:requirements :strips :equality)
-(:predicates (clear ?x)
-             (on-table ?x)
-             (arm-empty)
-             (holding ?x)
-             (on ?x ?y))
-
-(:action pickup
-  :parameters (?ob)
-  :precondition (and (clear ?ob) (on-table ?ob) (arm-empty))
-  :effect (and (holding ?ob) (not (clear ?ob)) (not (on-table ?ob)) 
-               (not (arm-empty))))
-
-(:action putdown
-  :parameters  (?ob)
-  :precondition (and (holding ?ob))
-  :effect (and (clear ?ob) (arm-empty) (on-table ?ob) 
-               (not (holding ?ob))))
-
-(:action stack
-  :parameters  (?ob ?underob)
-  //:precondition (and  (clear ?underob) (holding ?ob) (not (= ?ob ?underob)) )
-  :precondition (and  (clear ?underob) (holding ?ob))
-  :effect (and (arm-empty) (clear ?ob) (on ?ob ?underob)
-               (not (clear ?underob)) (not (holding ?ob))))
-
-(:action unstack
-  :parameters  (?ob ?underob)
-  :precondition (and (on ?ob ?underob) (clear ?ob) (arm-empty))
-  :effect (and (holding ?ob) (clear ?underob)
-               (not (on ?ob ?underob)) (not (clear ?ob)) (not (arm-empty)))))
+  (:requirements :strips :typing :equality)
+  (:types block)
+  (:predicates (on ?x ?y - block) (ontable ?x - block) (clear ?x - block)
+               (handempty) (holding ?x - block))
+  (:action pick-up
+   :parameters (?x - block)
+   :precondition (and (clear ?x) (ontable ?x) (handempty))
+   :effect (and (not (ontable ?x)) (not (clear ?x))
+                (not (handempty))  (holding ?x)))
+  (:action put-down
+   :parameters (?x - block)
+   :precondition (holding ?x)
+   :effect (and (not (holding ?x)) (clear ?x)
+                (handempty) (ontable ?x)))
+  (:action stack
+   :parameters (?x ?y - block)
+   :precondition (and (holding ?x) (clear ?y) (not (= ?x ?y)))
+   :effect (and (not (holding ?x)) (not (clear ?y)) (clear ?x)
+                (handempty) (on ?x ?y)))
+  (:action unstack
+   :parameters (?x ?y - block)
+   :precondition (and (on ?x ?y) (clear ?x) (handempty) (not (= ?x ?y)))
+   :effect (and (holding ?x) (clear ?y) (not (clear ?x))
+                (not (handempty)) (not (on ?x ?y))))
+)
