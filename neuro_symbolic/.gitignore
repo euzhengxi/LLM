@@ -1,3 +1,5 @@
 .env
-PDDL/pb*
-problems/*
+PDDL/blocksworld/*
+PDDL/logistics/*
+problems/blocksworld/*
+problems/logistics/*
