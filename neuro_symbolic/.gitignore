@@ -1,4 +1,5 @@
 .env
+sas_plan
 PDDL/blocksworld/*
 PDDL/logistics/*
 problems/blocksworld/*
