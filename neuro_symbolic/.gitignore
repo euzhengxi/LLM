@@ -1,5 +1,5 @@
 .env
-sas_plan
+sas/*
 PDDL/blocksworld/*
 PDDL/logistics/*
 problems/blocksworld/*

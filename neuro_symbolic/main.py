@@ -162,10 +162,12 @@ def correct_pddl(problem_description:str, system_prompt:str, invalid_pddls:list,
 
 
 
-def generate_sas_plan(domain_filepath:str, pddl_filepath:str):
+def generate_sas_plan(domain_filepath:str, pddl_filepath:str, sas_filepath:str):
     cmd = [ "downward/fast-downward.py",
            "--alias", 
            "lama-first",
+           "--plan-file",
+            sas_filepath,
             domain_filepath,
             pddl_filepath,
         ]
@@ -178,7 +180,7 @@ def generate_sas_plan(domain_filepath:str, pddl_filepath:str):
 def verify_sas_plan(domain_filepath:str, pddl_filepath:str):
     cmd = [ "ecl",
            "--shell",
-           "inval-main.lsp",
+           "INVAL/inval-main.lsp",
             domain_filepath,
             pddl_filepath,
             "."
@@ -205,56 +207,51 @@ if __name__ == "__main__":
             #loading in problem descriptions
             filepath = f"{PROBLEMS_DIR}/{problem_type}/{file}"
             with open(filepath, "r") as f:
-                problems.append(f.read())
+                problems.append((file.split(".")[0], f.read()))
     
     print(f"Generating {len(problems)} problem pddls...")
+    print()
     #pipeline
-    for i in range(len(problems)):
-        problem_description = problems[i]
-
+    for (filename, problem_description) in problems:
         #generate pddl based on description
-        #pddl = generate_pddl(system_prompt=system_prompt, problem_description=problem_description)
-        pddl_filepath = f"PDDL/{problem_type}/pb{i + 1}.pddl"
-        #with open(pddl_filepath, "w") as file:
-        #    file.write(pddl)
-        pddl = ""
-        with open(pddl_filepath, "r") as file:
-            pddl = file.read()
+        pddl = generate_pddl(system_prompt=system_prompt, problem_description=problem_description)
+        pddl_filepath = f"PDDL/{problem_type}/{filename}.pddl"
+        with open(pddl_filepath, "w") as f:
+            f.write(pddl)
+        #pddl = ""
+        #with open(pddl_filepath, "r") as file:
+        #    pddl = file.read()
 
-        print(f"PDDL generated for problem {i + 1}")
-        print(pddl)
+        print(f">>> PDDL generated for {filename}")
         #validate pddl and correct it if there are errors
         isValid = False
         invalid_pddls, error_logs = [], []
         for j in range(3):
-            isValid, error_log = validate_pddl(domain_filepath=domain_filepath, pddl_filepath="PDDL/blocksworld/pb1.pddl")
+            isValid, error_log = validate_pddl(domain_filepath=domain_filepath, pddl_filepath=pddl_filepath)
 
             if not isValid: 
                 invalid_pddls.append(pddl)
                 error_logs.append(error_log)
                 diagnosis = generate_diagnosis(problem_description=problem_description, system_prompt=system_prompt, invalid_pddls=invalid_pddls, error_logs=error_logs)
-                print(f"Attempt {j + 1} at fixing pddl for problem {i + 1}: {error_log}")
+                print(f"Attempt {j + 1} at fixing pddl for {filename}: {error_log}")
                 print(diagnosis)
                 pddl = correct_pddl(problem_description=problem_description, system_prompt=system_prompt, invalid_pddls=invalid_pddls, error_logs=error_logs, diagnosis=diagnosis)
-                with open(pddl_filepath, "w") as file:
-                    file.write(pddl)
+                with open(pddl_filepath, "w") as f:
+                    f.write(pddl)
 
             else:
                 break
             
         if isValid:
-            print(f"Valid PDDL generated for problem {i + 1}")
-            exit_code = generate_sas_plan(domain_filepath=domain_filepath, pddl_filepath=pddl_filepath)
+            print(f"Valid PDDL generated for {filename}")
+            sas_filepath = f"sas/{problem_type}/sas_plan_{filename}"
+            exit_code = generate_sas_plan(domain_filepath=domain_filepath, pddl_filepath=pddl_filepath, sas_filepath=sas_filepath)
             if exit_code == 0:
-                print(f"sas_plan generated for problem {i + 1}")
+                print(f"sas_plan generated for {filename}")
                 status_code = verify_sas_plan(domain_filepath=domain_filepath, pddl_filepath=pddl_filepath)
                 if status_code == 0:
-                    print(f"sas_plan for problem {i + 1} is alid")
+                    print(f"sas_plan for {filename} validated")
+    
+        print()
+        print()
 
-
-        
-    
-    
-    
-    
-    
