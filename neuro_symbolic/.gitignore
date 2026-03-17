@@ -4,3 +4,4 @@ PDDL/blocksworld/*
 PDDL/logistics/*
 problems/blocksworld/*
 problems/logistics/*
+pipeline_logs.txt

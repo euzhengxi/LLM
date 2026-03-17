@@ -1,7 +1,12 @@
 import os
+import logging
+import subprocess
+
 from openai import OpenAI
 from dotenv import load_dotenv
-import subprocess
+
+logger = logging.getLogger()
+logging.basicConfig(filename='pipeline_logs.txt', level=logging.INFO)
 
 PROBLEMS_DIR = "/home/zx/LLM/neuro_symbolic/problems"
 SAMPLE_COUNT = 2
@@ -9,16 +14,16 @@ SAMPLE_COUNT = 2
 def generate_filepaths(problem_type:str, sample_count:int):
     domain_filepath = f"PDDL/{problem_type}/domain.pddl"
 
-    problem_filelist, pddl_filelist = [], []
+    sample_problems, sample_pddls = [], []
     for i in range(sample_count):
-        problem_filelist.append(f"problems/{problem_type}/sample{i + 1}.txt")
-        pddl_filelist.append(f"PDDL/{problem_type}/sample{i + 1}.pddl")
+        sample_problems.append(f"problems/{problem_type}/sample{i + 1}.txt")
+        sample_pddls.append(f"PDDL/{problem_type}/sample{i + 1}.pddl")
 
-    return domain_filepath, problem_filelist, pddl_filelist 
+    return domain_filepath, sample_problems, sample_pddls 
 
 
 
-def generate_system_prompt(problem_type:str, domain_filepath:str, problem_filelist:list, pddl_filelist:list):
+def generate_system_prompt(problem_type:str, domain_filepath:str, sample_problems:list, sample_pddls:list):
     #create template for system prompt - context + domain knowledge
     domain_pddl = ""
     with open(domain_filepath, "r") as file:
@@ -31,13 +36,13 @@ def generate_system_prompt(problem_type:str, domain_filepath:str, problem_fileli
     prompt_list = [system_prompt]
 
     #complement template with a few examples for few shot prompting
-    n = len(problem_filelist)
+    n = len(sample_problems)
     problem_description, pddl = "", ""
     for i in range(n):
-        with open(problem_filelist[i], "r") as f1:
+        with open(sample_problems[i], "r") as f1:
             problem_description = f1.read()
         
-        with open(pddl_filelist[i], "r") as f2:
+        with open(sample_pddls[i], "r") as f2:
             pddl = f2.read()
         
         example_prompt = f"Example {i + 1}: \n\
@@ -197,8 +202,8 @@ if __name__ == "__main__":
     client = OpenAI(api_key=OPENAI_API_KEY)
 
     problem_type = "blocksworld"
-    domain_filepath, problem_filelist, pddl_filelist = generate_filepaths(problem_type=problem_type, sample_count=SAMPLE_COUNT)
-    system_prompt = generate_system_prompt(problem_type=problem_type, domain_filepath=domain_filepath, problem_filelist=problem_filelist, pddl_filelist=pddl_filelist)
+    domain_filepath, sample_problems, sample_pddls = generate_filepaths(problem_type=problem_type, sample_count=SAMPLE_COUNT)
+    system_prompt = generate_system_prompt(problem_type=problem_type, domain_filepath=domain_filepath, sample_problems=sample_problems, sample_pddls=sample_pddls)
     
     #read problem statements
     problems = []
@@ -206,23 +211,22 @@ if __name__ == "__main__":
         if "sample" not in file:
             #loading in problem descriptions
             filepath = f"{PROBLEMS_DIR}/{problem_type}/{file}"
+            filename = file.split(".")[0]
             with open(filepath, "r") as f:
-                problems.append((file.split(".")[0], f.read()))
+                problems.append((filename, f.read()))
     
-    print(f"Generating {len(problems)} problem pddls...")
-    print()
+    logger.info(f"Generating {len(problems)} problem pddls... \n")
+
     #pipeline
-    for (filename, problem_description) in problems:
+    for filename, problem_description in problems:
         #generate pddl based on description
         pddl = generate_pddl(system_prompt=system_prompt, problem_description=problem_description)
         pddl_filepath = f"PDDL/{problem_type}/{filename}.pddl"
         with open(pddl_filepath, "w") as f:
             f.write(pddl)
-        #pddl = ""
-        #with open(pddl_filepath, "r") as file:
-        #    pddl = file.read()
 
-        print(f">>> PDDL generated for {filename}")
+        logger.info(f">>> PDDL generated for {filename}")
+
         #validate pddl and correct it if there are errors
         isValid = False
         invalid_pddls, error_logs = [], []
@@ -233,8 +237,9 @@ if __name__ == "__main__":
                 invalid_pddls.append(pddl)
                 error_logs.append(error_log)
                 diagnosis = generate_diagnosis(problem_description=problem_description, system_prompt=system_prompt, invalid_pddls=invalid_pddls, error_logs=error_logs)
-                print(f"Attempt {j + 1} at fixing pddl for {filename}: {error_log}")
-                print(diagnosis)
+                logger.warning(f"Attempt {j + 1} at fixing pddl for {filename}: {error_log}")
+                logger.warning(f"PDDL: {pddl}")
+                logger.warning(f"{diagnosis} \n")
                 pddl = correct_pddl(problem_description=problem_description, system_prompt=system_prompt, invalid_pddls=invalid_pddls, error_logs=error_logs, diagnosis=diagnosis)
                 with open(pddl_filepath, "w") as f:
                     f.write(pddl)
@@ -243,15 +248,14 @@ if __name__ == "__main__":
                 break
             
         if isValid:
-            print(f"Valid PDDL generated for {filename}")
+            logger.info(f"Valid PDDL generated for {filename}")
             sas_filepath = f"sas/{problem_type}/sas_plan_{filename}"
             exit_code = generate_sas_plan(domain_filepath=domain_filepath, pddl_filepath=pddl_filepath, sas_filepath=sas_filepath)
             if exit_code == 0:
-                print(f"sas_plan generated for {filename}")
+                logger.info(f"sas_plan generated for {filename}")
                 status_code = verify_sas_plan(domain_filepath=domain_filepath, pddl_filepath=pddl_filepath)
                 if status_code == 0:
-                    print(f"sas_plan for {filename} validated")
+                    logger.info(f"sas_plan for {filename} validated")
     
-        print()
-        print()
+        logger.info("\n\n")
 
