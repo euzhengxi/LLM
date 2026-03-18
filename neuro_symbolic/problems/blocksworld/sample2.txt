@@ -1,0 +1,1 @@
+Initially, there are 3 blocks (a, b, c) on the table, the robotic arm is free and all blocks are clear. The end goal is to have b on the table, a on top of b and c on top of a. 

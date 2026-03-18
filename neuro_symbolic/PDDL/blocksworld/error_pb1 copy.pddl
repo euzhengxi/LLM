@@ -1,0 +1,7 @@
+(define (problem blocksworld-unstack-3)
+  (:domain blocksworld)
+  (:objects a b c - block)
+  (:init (handempty) (a b) (on b b) (ontable c) (clear a))
+  (:goal (and (ontable d) (ontable b) (ontable c) (clear a) (clear b) (clear c)))
+)
+; undeclared var d, missing predicate on (a b), on(b b) 

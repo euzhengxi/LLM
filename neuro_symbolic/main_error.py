@@ -6,7 +6,7 @@ from openai import OpenAI
 from dotenv import load_dotenv
 
 logger = logging.getLogger()
-logging.basicConfig(filename='pipeline_logs.txt', level=logging.INFO)
+logging.basicConfig(filename='error_pipeline_logs.txt', level=logging.INFO)
 
 PROBLEMS_DIR = "/home/zx/LLM/neuro_symbolic/problems"
 SAMPLE_COUNT = 2
@@ -114,11 +114,14 @@ def validate_pddl(domain_filepath:str, pddl_filepath:str):
         return True, ""
     elif exit_code == 0:
         if "goal" in result.stdout:
+            print(f"{pddl_filepath} validation error: Error in goal")
             return False, f"validation error: Error in goal"
+        print(f"{pddl_filepath} validation error: initial in goal")
         return False, f"validation error: Error in initial state"
     
     error_log = parse_logs(result.stdout)
     error_type = classify_error(error_log)
+    print(f"{pddl_filepath} translation error: {error_type} - {error_log}")
     return False, f"translation error: {error_type} - {error_log}"
 
 
@@ -128,7 +131,7 @@ def generate_diagnosis(problem_description:str, system_prompt:str, invalid_pddls
     for i in range(len(error_logs) - 1):
         history += f"{i + 1}: {error_logs[i]} \n"
 
-    user_content = f"The following PDDL is wrong. Carefully analyze the planner error and explain the root cause of the error and describe how to fix it. \n \
+    user_content = f"The following PDDL is wrong. Carefuly analyse and explain the root cause of the error and describe how to fix it. \n \
                     actual description: {problem_description} \n\
                     pddl: {invalid_pddls[-1]} \n\
                     current error: {error_logs[-1]} \n\
@@ -215,17 +218,15 @@ if __name__ == "__main__":
             with open(filepath, "r") as f:
                 problems.append((filename, f.read()))
     
-    logger.info(f"Generating {len(problems)} problem pddls... \n")
+    logger.info(f"Correcting {len(problems)} problem pddls... \n")
 
     #pipeline
     for filename, problem_description in problems:
         #generate pddl based on description
-        pddl = generate_pddl(system_prompt=system_prompt, problem_description=problem_description)
-        pddl_filepath = f"PDDL/{problem_type}/{filename}.pddl"
-        with open(pddl_filepath, "w") as f:
-            f.write(pddl)
-
-        logger.info(f"PDDL generated for {filename}")
+        pddl = ""
+        pddl_filepath = f"PDDL/{problem_type}/error_{filename}.pddl"
+        with open(pddl_filepath, "r") as f:
+            pddl = f.read()
 
         #validate pddl and correct it if there are errors
         isValid = False
@@ -236,10 +237,10 @@ if __name__ == "__main__":
             if not isValid: 
                 invalid_pddls.append(pddl)
                 error_logs.append(error_log)
-
                 diagnosis = generate_diagnosis(problem_description=problem_description, system_prompt=system_prompt, invalid_pddls=invalid_pddls, error_logs=error_logs)
                 logger.warning(f"Attempt {j + 1} at fixing pddl for {filename}: {error_log}")
-                logger.warning(f"PDDL: {pddl}")
+                logger.warning(f"problem: {problem_description} \n")
+                logger.warning(f"PDDL: {pddl}\n")
                 logger.warning(f"{diagnosis} \n")
                 pddl = correct_pddl(problem_description=problem_description, system_prompt=system_prompt, invalid_pddls=invalid_pddls, error_logs=error_logs, diagnosis=diagnosis)
                 with open(pddl_filepath, "w") as f:

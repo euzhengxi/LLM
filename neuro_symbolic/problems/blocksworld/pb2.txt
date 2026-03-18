@@ -1,0 +1,25 @@
+In this scenario, you are tasked with moving eight individual blocks from a scattered initial state into a single, vertical stack. Here is the breakdown of the problem:
+
+The Setup: 
+
+Objects: There are 8 blocks, labeled a through h.
+
+Initial State: All eight blocks are currently sitting directly on the table. Since nothing is stacked on top of them, every block is considered clear, and the robot arm is currently empty.
+
+The Goal: The objective is to rearrange the blocks into a single 8-block high tower. The specific stacking order required is:
+
+a on top of b
+
+b on top of c
+
+c on top of d
+
+d on top of e
+
+e on top of f
+
+f on top of g
+
+g on top of h
+
+In this final configuration, block h will remain on the table, serving as the base of the tower, while block a will be at the very top.

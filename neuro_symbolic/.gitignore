@@ -1,7 +1,4 @@
 .env
 sas/*
-PDDL/blocksworld/*
-PDDL/logistics/*
-problems/blocksworld/*
-problems/logistics/*
 pipeline_logs.txt
+error_pipeline_logs.txt

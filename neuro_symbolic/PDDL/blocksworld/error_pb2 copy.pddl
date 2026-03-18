@@ -1,0 +1,12 @@
+(define (problem blocksworld-problem)
+  (:domain blocksworld)
+  (:objects a b c d e f g h - block)
+  (:init (armempty) (ontable a) (ontable b) (ontable c) (ontable d)
+         (ontable e) (ontable f) (ontable g) (ontable h)
+         (clear a) (clear b) (clear c) (clear d)
+         (clear e) (clear f) (clear g) (clear h))
+  (:goal (and (clear a) (on a b) (on b c) (on c d)
+              (on e e) (on e f) (on f g) (on g h)
+              (ontable h)))
+)
+;handempty vs armempty, on e e

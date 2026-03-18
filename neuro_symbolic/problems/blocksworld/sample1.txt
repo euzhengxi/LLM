@@ -1,0 +1,2 @@
+A robot arm starts with three blocks (a, b, and c) lying separately on a table, and it is not holding anything. All blocks are clear and can be picked up.
+The goal is to build a stack where b is on the table, a is placed on top of b, and c is placed on top of a, leaving c as the top block with nothing on it.
