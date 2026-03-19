@@ -1,7 +1,1 @@
-In the "Unstack 3" problem, the robot is presented with a simple vertical tower and tasked with dismantling it completely. This is a foundational exercise in automated planning because it requires the AI to understand physical dependencies—it cannot move a middle block until the top one is cleared.
-
-Problem Breakdown
-
-The Initial State: Three blocks are stacked in a single column. Block A is on top of B, and B is on top of C. Block C rests on the table.
-
-The Goal: The robot must move the blocks so that A, B, and C are all sitting directly on the table, side-by-side, with nothing stacked on any of them.
+You have 8 blocks a - h. They are on the table. Stack them in a column. 
